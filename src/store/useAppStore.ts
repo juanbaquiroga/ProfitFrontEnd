@@ -12,6 +12,7 @@ interface AppState {
     // UI Config
     theme: 'light' | 'dark';
     animationsEnabled: boolean;
+    isSidebarCollapsed: boolean;
     
     // Actions
     setAuth: (user: User, access: string, refresh: string) => void;
@@ -19,6 +20,7 @@ interface AppState {
     logout: () => void;
     toggleAnimations: () => void;
     setTheme: (theme: 'light' | 'dark') => void;
+    toggleSidebar: () => void;
 }
 
 // Estado global de la app
@@ -30,13 +32,13 @@ export const useAppStore = create<AppState>()(
       refreshToken: null,
       theme: 'light',
       animationsEnabled: true,
+      isSidebarCollapsed: false,
       setAuth: (user, access, refresh) => set({ user, accessToken: access, refreshToken: refresh }),
-      updateAccessToken: (accessToken) => 
-        set({ accessToken }),
+      updateAccessToken: (accessToken) => set({ accessToken }),
       logout: () => set({ user: null, accessToken: null, refreshToken: null }),
       toggleAnimations: () => set((state) => ({ animationsEnabled: !state.animationsEnabled })),
       setTheme: (theme) => set({ theme }),
-    }),
+      toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),}),
     { name: 'app-storage' }
   )
 );

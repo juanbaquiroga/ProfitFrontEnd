@@ -2,22 +2,29 @@
 import { authService } from "@/services/authService";
 import { useAppStore } from "@/store/useAppStore";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-
-const onSubmit = async (formData: FormData) => {
-    const nombreUsuario = formData.get("nombreUsuario") as string;
-    const password = formData.get("password") as string;
-
-    try {
-        const response = await authService.login({ nombreUsuario, password });
-        console.log('login exitoso \n', response);
-        useAppStore.getState().setAuth(response.usuario, response.accessToken, response.refreshToken);
-        console.log("estado actualizado \n", useAppStore.getState());
-    } catch (error) {
-        console.error("Credenciales inválidas");
-    }
-};
 const Login = () => {
+    const router = useRouter();
+
+    const onSubmit = async (formData: FormData) => {
+        const nombreUsuario = formData.get("nombreUsuario") as string;
+        const password = formData.get("password") as string;
+
+        try {
+            const response = await authService.login({ nombreUsuario, password });
+            console.log('login exitoso \n', response);
+            useAppStore.getState().setAuth(response.usuario, response.accessToken, response.refreshToken);
+            console.log("estado actualizado \n", useAppStore.getState());
+
+            // Redirigir al dashboard
+            router.push("/dashboard");
+
+        } catch (error) {
+            console.error("Credenciales inválidas");
+        }
+    };
+
     return (
         <div className="flex flex-col justify-start p-16 rounded-2xl bg-white">
             <h1 className="text-3xl font-bold mb-8">Login</h1>

@@ -17,7 +17,7 @@ export const authService = {
       password: credentials.password,
       nombre: credentials.nombre,
       apellido: credentials.apellido,
-      rolId: 2,
+      rol: "ADMINISTRADOR",
     }, {
       headers: {
         'Content-Type': 'application/json',

@@ -23,7 +23,7 @@ api.interceptors.response.use(
         const originalRequest = error.config;
 
         // Si es 401 y no hemos reintentado ya...
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
@@ -46,7 +46,7 @@ api.interceptors.response.use(
             } catch (refreshError) {
                 // Si el refresh también falla, al login de cabeza
                 useAppStore.getState().logout();
-                window.location.href = '/auth/login';
+                window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
         }
