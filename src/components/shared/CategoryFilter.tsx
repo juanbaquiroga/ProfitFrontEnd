@@ -9,14 +9,14 @@ interface CategoryFiltersProps {
 export const CategoryFilter = ({ categories, activeCategory, setActiveCategory }: CategoryFiltersProps) => {
 
     return (
-        <div className="flex flex-row w-min gap-2 items-center overflow-x-auto py-2 px-1 scrollbar-hide rounded-4xl bg-white">
+        <div className="flex flex-row w-full max-w-mingv gap-2 items-center overflow-x-auto overflow-y-hidden no-scrollbar py-2 px-1 rounded-4xl bg-white">
             <button
                 onClick={() => setActiveCategory(undefined)}
                 className={cn(
                     "px-6 py-2.5 rounded-full text-sm h-min font-bold whitespace-nowrap transition-all",
                     activeCategory === undefined
-                        ? "bg-[#047857] text-white shadow-sm"
-                        : "bg-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        ? "bg-profit text-primary shadow-sm"
+                        : "bg-transparent text-slate-500 hover:text-primary hover:bg-slate-50"
                 )}
             >
                 Todos los Productos
@@ -28,8 +28,8 @@ export const CategoryFilter = ({ categories, activeCategory, setActiveCategory }
                     className={cn(
                         "px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all",
                         activeCategory === category
-                            ? "bg-[#047857] text-white shadow-sm"
-                            : "bg-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            ? "bg-profit text-primary shadow-sm"
+                            : "bg-transparent text-slate-500 hover:text-primary hover:bg-slate-50"
                     )}
                 >
                     {category}

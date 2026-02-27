@@ -46,7 +46,7 @@ export const Sidebar = () => {
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className="hover:bg-profit/10"
+          className="hover:bg-profit/20"
         >
           {isSidebarCollapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
         </Button>

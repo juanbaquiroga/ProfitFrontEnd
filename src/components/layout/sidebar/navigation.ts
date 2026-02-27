@@ -9,14 +9,9 @@ import {
 
 export const DASHBOARD_ROUTES = [
     {
-        label: "Venta Rapida",
+        label: "Inicio",
         icon: ShoppingBasket,
         href: "/sell"
-    },
-    { 
-        label: "Dashboard", 
-        icon: LayoutDashboard, 
-        href: "/dashboard" 
     },
     { 
         label: "Stock", 
@@ -24,14 +19,19 @@ export const DASHBOARD_ROUTES = [
         href: "/stock" 
     },
     { 
+        label: "Proveedores", 
+        icon: Users, 
+        href: "/proveedores" 
+    },
+    { 
         label: "Ventas", 
         icon: BadgeDollarSign, 
         href: "/ventas" 
     },
     { 
-        label: "Proveedores", 
-        icon: Users, 
-        href: "/proveedores" 
+        label: "Dashboard", 
+        icon: LayoutDashboard, 
+        href: "/dashboard" 
     },
 ];
 

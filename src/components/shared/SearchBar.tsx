@@ -10,7 +10,7 @@ export const SearchBar = ({ value, onChange }: { value: string, onChange: (value
     useEffect(() => {
         // Detectar si parece un código de barras (suelen ser largos y sin espacios)
         const isBarcode = localValue.length > 7 && !localValue.includes(" ");
-        
+
         // Si es un código de barras, NO ESPERAMOS. Buscamos instantáneamente.
         // Si el usuario borró todo (""), tampoco esperamos, limpiamos instantáneamente.
         if (isBarcode || localValue === "") {
@@ -26,13 +26,13 @@ export const SearchBar = ({ value, onChange }: { value: string, onChange: (value
     }, [localValue, onChange]);
 
     return (
-        <div className="relative w-full max-w-md h-11">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative w-full flex items-center pl-3 justify-start max-w-md h-11 bg-card rounded-2xl border border-border transition-colors focus-within:border-profit focus-within:ring-2 focus-within:ring-profit/20">
+            <Search className="h-4 w-4 text-muted-foreground" />
             <Input
                 placeholder="Escanear o buscar producto..."
                 value={localValue}
                 onChange={(e) => setLocalValue(e.target.value)}
-                className="pl-10 bg-accent/30 border-none h-11"
+                className="border-none text-primary font-semibold h-11 rounded-2xl focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent"
                 autoFocus
             />
         </div>
