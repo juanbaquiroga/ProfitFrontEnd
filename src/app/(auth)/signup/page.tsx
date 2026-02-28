@@ -2,8 +2,10 @@
 import { authService } from "@/services/authService";
 import { useAppStore } from "@/store/useAppStore";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const onSubmit = async (formData: FormData) => {
+    const router = useRouter();
     const nombreUsuario = formData.get("nombreUsuario") as string;
     const password = formData.get("password") as string;
     const nombre = formData.get("nombre") as string;
@@ -14,6 +16,7 @@ const onSubmit = async (formData: FormData) => {
         console.log('registro exitoso \n', response);
         useAppStore.getState().setAuth(response.usuario, response.accessToken, response.refreshToken);
         console.log("estado actualizado \n", useAppStore.getState());
+        router.push("/sell");
     } catch (error) {
         console.error("Error al registrarse");
     }
@@ -33,7 +36,7 @@ const Signup = () => {
             <p className="mt-6 text-center text-sm text-gray-500">
                 ¿Ya tienes cuenta?{" "}
                 <Link
-                    href="/auth/login"
+                    href="/login"
                     className="font-semibold text-profit hover:text-profit/80 transition-colors"
                 >
                     Inicia sesión aquí

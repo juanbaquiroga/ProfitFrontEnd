@@ -18,7 +18,7 @@ const Login = () => {
             console.log("estado actualizado \n", useAppStore.getState());
 
             // Redirigir al dashboard
-            router.push("/dashboard");
+            router.push("/sell");
 
         } catch (error) {
             console.error("Credenciales inválidas");
@@ -36,7 +36,7 @@ const Login = () => {
             <p className="mt-6 text-center text-sm text-gray-500">
                 ¿No tienes cuenta?{" "}
                 <Link
-                    href="/auth/signup"
+                    href="/signup"
                     className="font-semibold text-profit hover:text-profit/80 transition-colors"
                 >
                     Regístrate aquí
