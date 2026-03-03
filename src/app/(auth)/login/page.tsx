@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Lock, Eye, EyeOff, LogIn, UserPlus, Store } from "lucide-react";
+import { User, Lock, Eye, EyeOff, LogIn, UserPlus, ShoppingCart } from "lucide-react";
 
 const Login = () => {
     const router = useRouter();
@@ -34,7 +34,22 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 p-4">
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 p-4 space-y-8">
+            {/* Header / Brand */}
+            <div className="flex flex-col items-center text-center space-y-3">
+                <div className="bg-primary/10 p-3 rounded-2xl">
+                    <ShoppingCart className="w-10 h-10 text-primary" strokeWidth={1.5} />
+                </div>
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+                        PROFIT
+                    </h1>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                        Sistema de gestión de ventas y stock
+                    </p>
+                </div>
+            </div>
+
             <div className="w-full max-w-md bg-card rounded-[24px] p-8 lg:p-10 shadow-xl border border-slate-100 flex flex-col justify-center space-y-8">
                 <div className="space-y-3 text-center">
                     <h1 className="text-2xl font-bold tracking-tight text-slate-800">
@@ -67,7 +82,7 @@ const Login = () => {
                         <div className="space-y-2 text-left">
                             <div className="flex justify-between items-center ml-1">
                                 <Label htmlFor="password" className="text-slate-500 font-medium">Contraseña</Label>
-                                <Link href="#" className="text-xs text-primary hover:text-primary/80 font-medium transition-colors">
+                                <Link href="/forgot-password" className="text-xs text-primary hover:text-primary/80 font-medium transition-colors">
                                     ¿Olvidé mi contraseña?
                                 </Link>
                             </div>
@@ -86,7 +101,7 @@ const Login = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                                     tabIndex={-1}
                                 >
                                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -107,7 +122,7 @@ const Login = () => {
                         </div>
                     </div>
 
-                    <Button type="submit" className="w-full bg-primary text-primary-foreground rounded-xl py-6 shadow-sm hover:shadow-md transition-all text-base font-medium flex items-center justify-center gap-2">
+                    <Button type="submit" className="w-full bg-primary text-primary-foreground rounded-xl py-6 shadow-sm hover:shadow-md transition-all text-base font-medium flex items-center justify-center gap-2 cursor-pointer">
                         <LogIn className="w-5 h-5" />
                         Iniciar Sesión
                     </Button>
