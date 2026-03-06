@@ -1,6 +1,6 @@
 import { Plus, Minus } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
-
+import { memo } from "react";
 import { Product } from "@/types/product.types";
 
 interface CartItemProps {
@@ -10,8 +10,11 @@ interface CartItemProps {
     };
 }
 
-export const CartItem = ({ item }: CartItemProps) => {
-    const { updateQuantity } = useCartStore();
+export const CartItem = memo(({ item }: CartItemProps) => {
+    // Usar selector específico para no suscribirse a todo el estado del carrito
+    const updateQuantity = useCartStore((state) => state.updateQuantity);
+
+    const productId = item.product.productoId || item.product.codigo;
 
     return (
         <div className="flex flex-col gap-2">
@@ -28,14 +31,14 @@ export const CartItem = ({ item }: CartItemProps) => {
                 <div className="flex items-center border border-border rounded-md overflow-hidden">
                     <button
                         className="px-2 py-1 hover:bg-accent"
-                        onClick={() => updateQuantity(item.product.codigo, item.quantity - 1)}
+                        onClick={() => updateQuantity(productId, item.quantity - 1)}
                     >
                         <Minus className="h-3 w-3" />
                     </button>
                     <span className="font-bold w-6 text-center text-primary">{item.quantity}</span>
                     <button
                         className="px-2 py-1 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => updateQuantity(item.product.codigo, item.quantity + 1)}
+                        onClick={() => updateQuantity(productId, item.quantity + 1)}
                         disabled={item.quantity >= item.product.stock}
                     >
                         <Plus className="h-3 w-3" />
@@ -44,4 +47,5 @@ export const CartItem = ({ item }: CartItemProps) => {
             </div>
         </div>
     );
-};
+});
+CartItem.displayName = "CartItem";

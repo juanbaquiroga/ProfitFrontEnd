@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { SearchBar } from "@/components/shared/SearchBar";
-import { StockTable } from "@/components/shared/StockTable";
+import { ProductTable } from "@/components/shared/ProductsTable";
 import { ProductForm } from "@/components/shared/ProductForm";
 import { useProducts, useCrearProducto, useActualizarProducto, useEliminarProducto } from "@/hooks/useProducts";
 import { useCategorias } from "@/hooks/useCategorias";
@@ -138,14 +138,23 @@ export default function StockPage() {
                         </div>
                     </div>
                 ) : (
-                    <StockTable
+                    <ProductTable
                         data={products || []}
                         globalFilter={globalFilter}
                         setGlobalFilter={setGlobalFilter}
                         activeCategory={activeCategory}
                         activeAvailability={activeAvailability}
                         pagination={true}
-                        pageSize={15}
+                        pageSize={100}
+                        visibleColumns={{
+                            categoria: true,
+                            precioVenta: true,
+                            precioCompra: true,
+                            stock: true,
+                            disponibilidad: true,
+                            acciones: true
+                        }}
+                        onRowClick={handleEditClick}
                         onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
                     />

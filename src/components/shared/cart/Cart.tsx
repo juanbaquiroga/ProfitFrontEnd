@@ -1,29 +1,28 @@
-"use client";
-
 import { useCartStore } from "@/store/useCartStore";
 import { cn } from "@/lib/utils";
 import { ShoppingCart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CartItem } from "./CartItem";
+import { CartItemList } from "./CartItemList";
+import { useState } from "react";
+import { CheckoutModal } from "./CheckoutModal";
 
 export const Cart = () => {
-    const {
-        items,
-        isExpanded,
-        toggleCart,
-        clearCart,
-        getSubtotal,
-        getTax,
-        getDiscount,
-        getTotal
-    } = useCartStore();
+    // Desestructurar todo el objeto del store causa que cualquier cambio
+    // en cualquier parte del store vuelva a renderizar todo el componente.
+    // Usamos selectores individuales para suscribirnos solo a lo necesario.
+    const isExpanded = useCartStore((state) => state.isExpanded);
+    const toggleCart = useCartStore((state) => state.toggleCart);
+    const clearCart = useCartStore((state) => state.clearCart);
+    const itemsLength = useCartStore((state) => state.items.length);
 
-    const subtotal = getSubtotal();
-    const tax = getTax();
-    const discount = getDiscount();
-    const total = getTotal();
+    // Calcular valores en los selectores para reaccionar a cambios en sus resultados
+    const subtotal = useCartStore((state) => state.getSubtotal());
+    const tax = useCartStore((state) => state.getTax());
+    const discount = useCartStore((state) => state.getDiscount());
+    const total = useCartStore((state) => state.getTotal());
+    const totalItems = useCartStore((state) => state.items.reduce((acc, item) => acc + item.quantity, 0));
 
-    const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
+    const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
     return (
         <div
@@ -66,7 +65,7 @@ export const Cart = () => {
                             <p className="text-sm text-muted-foreground">Ticket #{(Math.floor(Math.random() * 90000) + 10000).toString()}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className={cn("cursor-pointer p-2", items.length > 0 ? "text-red-500 hover:text-red-600" : "text-slate-300")} onClick={clearCart}>
+                            <span className={cn("cursor-pointer p-2", itemsLength > 0 ? "text-red-500 hover:text-red-600" : "text-slate-300")} onClick={clearCart}>
                                 <Trash2 className="h-5 w-5" />
                             </span>
                             <span className="text-muted-foreground hover:text-slate-600 cursor-pointer text-2xl px-2" onClick={toggleCart}>
@@ -75,18 +74,9 @@ export const Cart = () => {
                         </div>
                     </div>
 
-                    {/* Lista de Items */}
+                    {/* Lista de Items delegada a un subcomponente para no re-renderizar todo Cart */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {items.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-muted gap-4">
-                                <ShoppingCart className="h-16 w-16" />
-                                <p>El carrito está vacío</p>
-                            </div>
-                        ) : (
-                            items.map((item) => (
-                                <CartItem key={item.product.codigo} item={item} />
-                            ))
-                        )}
+                        <CartItemList />
                     </div>
 
                     {/* Resumen */}
@@ -101,7 +91,7 @@ export const Cart = () => {
                                 <span className="font-medium text-red-500">-${discount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between text-muted-foreground">
-                                <span>Impuestos (12%)</span>
+                                <span>Impuestos</span>
                                 <span className="font-medium text-primary">${tax.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                         </div>
@@ -112,7 +102,11 @@ export const Cart = () => {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Button className="w-full bg-profit hover:bg-contrast text-primary font-bold h-12 text-lg rounded-xl">
+                            <Button
+                                className="w-full bg-profit hover:bg-contrast text-primary font-bold h-12 text-lg rounded-xl"
+                                onClick={() => setIsCheckoutOpen(true)}
+                                disabled={itemsLength === 0}
+                            >
                                 COBRAR &rarr;
                             </Button>
                             <div className="flex gap-2">
@@ -127,6 +121,11 @@ export const Cart = () => {
                     </div>
                 </div>
             )}
+
+            <CheckoutModal
+                isOpen={isCheckoutOpen}
+                onClose={() => setIsCheckoutOpen(false)}
+            />
         </div>
     );
 };
