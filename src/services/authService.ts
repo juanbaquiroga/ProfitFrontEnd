@@ -11,20 +11,16 @@ export const authService = {
     });
     return data;
   },
+
   signup: async (credentials: SignupRequest): Promise<UserResponse> => {
-    const { data } = await api.post('/auth/register', {
-      nombreUsuario: credentials.nombreUsuario,
-      password: credentials.password,
-      nombre: credentials.nombre,
-      apellido: credentials.apellido,
-      rol: "ADMINISTRADOR",
-    }, {
+    const { data } = await api.post('/auth/register', credentials, {
       headers: {
         'Content-Type': 'application/json',
       }
     });
     return data;
   },
+
   refresh: async (refreshToken: string): Promise<UserResponse> => {
     const { data } = await api.post('/auth/refresh', { refreshToken });
     return data;
