@@ -19,8 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/types/product.types";
 import { useState, useEffect, useMemo } from "react";
-import { Input } from "@/components/ui/input";
-import { Plus, ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -43,6 +42,7 @@ interface ProductTableProps {
     categoria?: boolean;
     precioVenta?: boolean;
     precioCompra?: boolean;
+    estado?: boolean;
     disponibilidad?: boolean;
     stock?: boolean;
     acciones?: boolean;
@@ -50,6 +50,7 @@ interface ProductTableProps {
   onRowClick?: (product: Product) => void;
   onEdit?: (product: Product) => void;
   onDelete?: (product: Product) => void;
+  onRestore?: (product: Product) => void;
 }
 
 export const ProductTable = ({
@@ -60,10 +61,11 @@ export const ProductTable = ({
   activeAvailability,
   pagination = false,
   pageSize = 10,
-  visibleColumns = { categoria: true, precioVenta: true, disponibilidad: true },
+  visibleColumns = { categoria: true, precioVenta: true, estado: true, disponibilidad: true },
   onRowClick,
   onEdit,
-  onDelete
+  onDelete,
+  onRestore
 }: ProductTableProps) => {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -125,24 +127,16 @@ export const ProductTable = ({
       });
     }
 
-    if (visibleColumns.disponibilidad) {
+    if (visibleColumns.estado) {
       baseCols.push({
-        id: "estado",
+        id: "estado_stock",
         header: "ESTADO",
-        accessorFn: (row) => {
-          if (!row.disponible) return "No Disponible";
-          if (row.stock <= 0) return "Agotado";
-          return "Disponible";
-        },
+        accessorFn: (row) => row.stock > 0 ? "Activo" : "Agotado",
         cell: ({ row }) => {
           const stock = row.original.stock;
-          const isDisponible = row.original.disponible;
-          let label = "DISPONIBLE";
+          let label = "ACTIVO";
           let style = "bg-green-100 text-green-700";
-          if (!isDisponible) {
-            label = "NO DISP.";
-            style = "bg-slate-200 text-slate-600";
-          } else if (stock <= 0) {
+          if (stock <= 0) {
             label = "AGOTADO";
             style = "bg-red-100 text-red-700";
           } else if (stock < 10) {
@@ -154,7 +148,22 @@ export const ProductTable = ({
       });
     }
 
-    if (visibleColumns.acciones && (onEdit || onDelete)) {
+    if (visibleColumns.disponibilidad) {
+      baseCols.push({
+        id: "disponibilidad_status",
+        header: "DISPONIBILIDAD",
+        accessorFn: (row) => row.habilitado ? "ESTADO_HABILITADO" : "ESTADO_DESHABILITADO",
+        cell: ({ row }) => {
+          const isHabilitado = row.original.habilitado;
+          let label = isHabilitado ? "HABILITADO" : "DESHABILITADO";
+          let style = isHabilitado ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600";
+
+          return <Badge className={cn("text-[10px] px-2 py-0 border-none shadow-none font-semibold", style)}>{label}</Badge>
+        }
+      });
+    }
+
+    if (visibleColumns.acciones && (onEdit || onDelete || onRestore)) {
       baseCols.push({
         id: "acciones",
         header: "",
@@ -169,16 +178,25 @@ export const ProductTable = ({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                {onDelete && (
+                {!row.original.habilitado && onRestore && (
+                  <DropdownMenuItem onClick={(e) => {
+                    e.stopPropagation();
+                    onRestore(row.original);
+                  }} className="cursor-pointer text-green-600 focus:text-green-600 focus:bg-green-50">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    <span>Restaurar producto</span>
+                  </DropdownMenuItem>
+                )}
+                {row.original.habilitado && onDelete && (
                   <DropdownMenuItem onClick={(e) => {
                     e.stopPropagation();
                     onDelete(row.original);
                   }} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
                     <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Eliminar producto</span>
+                    <span>Deshabilitar producto</span>
                   </DropdownMenuItem>
                 )}
-                {onEdit &&
+                {row.original.habilitado && onEdit && (
                   <DropdownMenuItem onClick={(e) => {
                     e.stopPropagation();
                     onEdit(row.original);
@@ -186,7 +204,7 @@ export const ProductTable = ({
                     <Pencil className="mr-2 h-4 w-4" />
                     <span>Editar producto</span>
                   </DropdownMenuItem>
-                }
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -195,7 +213,7 @@ export const ProductTable = ({
     }
 
     return baseCols;
-  }, [visibleColumns, onEdit, onDelete]);
+  }, [visibleColumns, onEdit, onDelete, onRestore]);
 
   const table = useReactTable({
     data,
@@ -217,20 +235,31 @@ export const ProductTable = ({
   });
 
   useEffect(() => {
-    if (activeCategory && activeCategory !== "all") {
-      table.getColumn("categoria_nombre")?.setFilterValue(activeCategory);
-    } else {
-      table.getColumn("categoria_nombre")?.setFilterValue("");
+    const catCol = table.getAllColumns().find(c => c.id === "categoria_nombre");
+    if (catCol) {
+      if (activeCategory && activeCategory !== "all") {
+        catCol.setFilterValue(activeCategory);
+      } else {
+        catCol.setFilterValue("");
+      }
     }
   }, [activeCategory, table]);
 
   useEffect(() => {
-    if (activeAvailability === "available") {
-      table.getColumn("estado")?.setFilterValue("Disponible");
-    } else if (activeAvailability === "out_of_stock") {
-      table.getColumn("estado")?.setFilterValue("Agotado");
-    } else {
-      table.getColumn("estado")?.setFilterValue("");
+    const estadoCol = table.getAllColumns().find(c => c.id === "estado_stock");
+    const dispCol = table.getAllColumns().find(c => c.id === "disponibilidad_status");
+
+    if (estadoCol) estadoCol.setFilterValue("");
+    if (dispCol) dispCol.setFilterValue("");
+
+    if (activeAvailability === "activo" && estadoCol) {
+      estadoCol.setFilterValue("Activo");
+    } else if (activeAvailability === "agotado" && estadoCol) {
+      estadoCol.setFilterValue("Agotado");
+    } else if (activeAvailability === "habilitado" && dispCol) {
+      dispCol.setFilterValue("ESTADO_HABILITADO");
+    } else if (activeAvailability === "deshabilitado" && dispCol) {
+      dispCol.setFilterValue("ESTADO_DESHABILITADO");
     }
   }, [activeAvailability, table]);
 

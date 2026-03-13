@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { SearchBar } from "@/components/shared/SearchBar";
 import { ProductTable } from "@/components/shared/ProductsTable";
 import { ProductForm } from "@/components/shared/ProductForm";
-import { useProducts, useCrearProducto, useActualizarProducto, useEliminarProducto } from "@/hooks/useProducts";
+import { useProducts, useProductosDeshabilitados, useCrearProducto, useActualizarProducto, useEliminarProducto, useHabilitarProducto } from "@/hooks/useProducts";
 import { useCategorias } from "@/hooks/useCategorias";
 import { Product, ProductoDTO } from "@/types/product.types";
 import { Button } from "@/components/ui/button";
@@ -23,25 +23,27 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function StockPage() {
-    // Hooks de datos
-    const { data: products, isLoading: isProductsLoading } = useProducts();
+    const { data: productsActivos, isLoading: isProductsLoading } = useProducts();
+    const { data: productsDeshabilitados, isLoading: isDeshabilitadosLoading } = useProductosDeshabilitados();
     const { data: categorias } = useCategorias();
     const crearMutation = useCrearProducto();
     const actualizarMutation = useActualizarProducto();
     const eliminarMutation = useEliminarProducto();
+    const habilitarMutation = useHabilitarProducto();
 
-    // Estados de filtros
     const [globalFilter, setGlobalFilter] = useState("");
     const [activeCategory, setActiveCategory] = useState<string>("all");
     const [activeAvailability, setActiveAvailability] = useState<string>("all");
 
-    // Estados de modales y formulario
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
+
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-    // Handlers
+    const [isRestoreAlertOpen, setIsRestoreAlertOpen] = useState(false);
+    const [productToRestore, setProductToRestore] = useState<Product | null>(null);
+
     const handleAddClick = () => {
         setSelectedProduct(undefined);
         setIsModalOpen(true);
@@ -57,19 +59,21 @@ export default function StockPage() {
         setIsAlertOpen(true);
     };
 
+    const handleRestoreClick = (product: Product) => {
+        setProductToRestore(product);
+        setIsRestoreAlertOpen(true);
+    };
+
     const handleFormSubmit = async (data: Omit<ProductoDTO, 'productoId'>) => {
         try {
             if (selectedProduct) {
-                // Actualizar
                 await actualizarMutation.mutateAsync({ id: selectedProduct.productoId, producto: data });
             } else {
-                // Crear
                 await crearMutation.mutateAsync(data);
             }
             setIsModalOpen(false);
-        } catch (error) {
-            console.error("Error al guardar:", error);
-            // Aquí idealmente iría un toast de error
+        } catch (error: any) {
+            alert(error.response?.data?.message || "Ocurrió un error al guardar el producto.");
         }
     };
 
@@ -79,23 +83,40 @@ export default function StockPage() {
             await eliminarMutation.mutateAsync(productToDelete.productoId);
             setIsAlertOpen(false);
             setProductToDelete(null);
-        } catch (error) {
-            console.error("Error al eliminar:", error);
+        } catch (error: any) {
+            alert(error.response?.data?.message || "Ocurrió un error al deshabilitar el producto.");
         }
     };
+
+    const handleConfirmRestore = async () => {
+        if (!productToRestore) return;
+        try {
+            await habilitarMutation.mutateAsync(productToRestore.productoId);
+            setIsRestoreAlertOpen(false);
+            setProductToRestore(null);
+        } catch (error: any) {
+            alert(error.response?.data?.message || "Ocurrió un error al restaurar el producto.");
+        }
+    };
+
+    const allProducts = [
+        ...(productsActivos || []),
+        ...(productsDeshabilitados || [])
+    ];
+
+    const currentLoading = isProductsLoading || isDeshabilitadosLoading;
 
     return (
         <div className="flex h-full flex-row w-full overflow-hidden bg-white">
             <div className="flex w-full flex-col gap-4 p-4 h-full overflow-hidden">
-                {/* Cabecera */}
-                <div className="flex justify-between items-center px-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-800">Gestión de Stock</h1>
-                    <Button onClick={handleAddClick} className="shadow-sm">
+                <div className="flex items-center justify-between px-1 relative min-h-[40px]">
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-800 absolute left-1/2 -translate-x-1/2 w-max">Gestión de Stock</h1>
+                    <div className="flex-1"></div>
+                    <Button onClick={handleAddClick} className="shadow-sm relative z-10">
                         <Plus className="mr-2 h-4 w-4" /> Añadir Producto
                     </Button>
                 </div>
 
-                {/* Filtros */}
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <div className="flex-1">
                         <SearchBar value={globalFilter} onChange={setGlobalFilter} />
@@ -115,22 +136,23 @@ export default function StockPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="w-full sm:w-[200px]">
+                    <div className="w-full sm:w-[250px]">
                         <Select value={activeAvailability} onValueChange={setActiveAvailability}>
                             <SelectTrigger className="w-full bg-slate-50 border-slate-200 focus:ring-primary/20 text-slate-600 rounded-xl h-10 px-4 text-[13px] font-medium transition-all">
-                                <SelectValue placeholder="Disponibilidad" />
+                                <SelectValue placeholder="Estado y Disponibilidad" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-100 shadow-xl overflow-hidden p-1 min-w-[200px]">
-                                <SelectItem value="all" className="text-[13px] font-medium text-slate-600 cursor-pointer">Todos</SelectItem>
-                                <SelectItem value="available" className="text-[13px] font-medium text-slate-600 cursor-pointer">Disponibles</SelectItem>
-                                <SelectItem value="out_of_stock" className="text-[13px] font-medium text-slate-600 cursor-pointer">Agotados</SelectItem>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-xl overflow-hidden p-1 min-w-[250px]">
+                                <SelectItem value="all" className="text-[13px] font-medium text-slate-600 cursor-pointer">Todos los productos</SelectItem>
+                                <SelectItem value="activo" className="text-[13px] font-medium text-slate-600 cursor-pointer">Con Stock (Activos)</SelectItem>
+                                <SelectItem value="agotado" className="text-[13px] font-medium text-slate-600 cursor-pointer">Agotados (Sin Stock)</SelectItem>
+                                <SelectItem value="habilitado" className="text-[13px] font-medium text-slate-600 cursor-pointer">Habilitados</SelectItem>
+                                <SelectItem value="deshabilitado" className="text-[13px] font-medium text-slate-600 cursor-pointer">Deshabilitados (Papelera)</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
 
-                {/* Contenido Tabla */}
-                {isProductsLoading ? (
+                {currentLoading ? (
                     <div className="flex flex-1 justify-center items-center bg-slate-50/50 rounded-xl border border-slate-100">
                         <div className="flex flex-col items-center gap-2">
                             <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
@@ -139,7 +161,7 @@ export default function StockPage() {
                     </div>
                 ) : (
                     <ProductTable
-                        data={products || []}
+                        data={allProducts}
                         globalFilter={globalFilter}
                         setGlobalFilter={setGlobalFilter}
                         activeCategory={activeCategory}
@@ -151,17 +173,22 @@ export default function StockPage() {
                             precioVenta: true,
                             precioCompra: true,
                             stock: true,
+                            estado: true,
                             disponibilidad: true,
                             acciones: true
                         }}
-                        onRowClick={handleEditClick}
+                        onRowClick={(product) => {
+                            if (product.habilitado) {
+                                handleEditClick(product);
+                            }
+                        }}
                         onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
+                        onRestore={handleRestoreClick}
                     />
                 )}
             </div>
 
-            {/* Modal para Formulario (Crear/Editar) */}
             <GenericModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -180,28 +207,53 @@ export default function StockPage() {
                 </div>
             </GenericModal>
 
-            {/* AlertDialog para Eliminar */}
             <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Esta acción no se puede deshacer. Esto eliminará permanentemente el producto
+                            Esta acción deshabilitará el producto
                             <span className="font-bold text-foreground"> {productToDelete?.nombre} </span>
-                            (SKU: {productToDelete?.codigo}) de nuestros servidores.
+                            (SKU: {productToDelete?.codigo}). Se enviará a la papelera y dejará de estar disponible en el sistema de ventas.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={eliminarMutation.isPending}>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
-                                e.preventDefault(); // Evitamos que cierre directo si queremos esperar la mutation
+                                e.preventDefault();
                                 handleConfirmDelete();
                             }}
                             className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                             disabled={eliminarMutation.isPending}
                         >
-                            {eliminarMutation.isPending ? "Eliminando..." : "Eliminar"}
+                            {eliminarMutation.isPending ? "Deshabilitando..." : "Deshabilitar"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isRestoreAlertOpen} onOpenChange={setIsRestoreAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Restaurar producto?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            El producto
+                            <span className="font-bold text-foreground"> {productToRestore?.nombre} </span>
+                            (SKU: {productToRestore?.codigo}) volverá a estar activo y disponible en el sistema.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={habilitarMutation.isPending}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleConfirmRestore();
+                            }}
+                            className="bg-green-600 hover:bg-green-700 focus:ring-green-600"
+                            disabled={habilitarMutation.isPending}
+                        >
+                            {habilitarMutation.isPending ? "Restaurando..." : "Restaurar"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
