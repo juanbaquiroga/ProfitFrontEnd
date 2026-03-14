@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { ChevronLeft, ChevronRight, Menu, LogOut } from "lucide-react";
+import { ChevronLeft, Menu } from "lucide-react";
 import { DASHBOARD_ROUTES, SETTINGS_ROUTE } from "./navigation";
 import { SidebarItem } from "@/components/layout/sidebar/SidebarItem";
 import { cn } from "@/lib/utils";
@@ -10,26 +10,24 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { useRouter } from "next/navigation";
 
 export const Sidebar = () => {
   const sidebarRef = useRef(null);
-  const router = useRouter();
-  const { isSidebarCollapsed, toggleSidebar, animationsEnabled, logout } = useAppStore();
+  const { isSidebarCollapsed, toggleSidebar, animationsEnabled, user } = useAppStore();
 
   useGSAP(() => {
     if (!animationsEnabled) return;
 
     gsap.to(sidebarRef.current, {
-      width: isSidebarCollapsed ? 80 : 256, // 80px vs 256px (w-20 vs w-64)
+      width: isSidebarCollapsed ? 80 : 256,
       duration: 0.4,
       ease: "expo.out",
     });
   }, [isSidebarCollapsed]);
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
+  const getInitials = (name?: string, lastName?: string) => {
+    if (!name && !lastName) return "U";
+    return `${name?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
   };
 
   return (
@@ -55,37 +53,46 @@ export const Sidebar = () => {
         <Separator />
       </div>
 
-
       <div className="flex flex-1 flex-col gap-y-2 p-2">
         {DASHBOARD_ROUTES.map((route) => (
           <SidebarItem key={route.href} {...route} />
         ))}
       </div>
+
       <div className="mt-auto p-4 flex flex-col gap-2">
         <Separator className="mb-4" />
         <nav className="grid gap-1">
-          {/* Enlace de configuración */}
+          {user && (
+            <div
+              className={cn(
+                "flex items-center gap-3 mb-2 p-2 rounded-md transition-colors",
+                isSidebarCollapsed ? "justify-center" : "justify-start"
+              )}
+            >
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white font-semibold text-sm shadow-sm"
+                style={{ backgroundColor: user.colorAvatar || "#10b981" }}
+              >
+                {getInitials(user.name, user.lastName)}
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="flex flex-col overflow-hidden">
+                  <span className="truncate text-sm font-medium">
+                    {user.name} {user.lastName}
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    @{user.username}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           <SidebarItem
             icon={SETTINGS_ROUTE.icon}
             label={SETTINGS_ROUTE.label}
             href={SETTINGS_ROUTE.href}
           />
-
-          {/* Botón de Logout */}
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50",
-              isSidebarCollapsed && "justify-center px-0"
-            )}
-            onClick={handleLogout}
-          >
-            <LogOut className={cn("shrink-0", isSidebarCollapsed ? "h-5 w-5" : "mr-2 h-4 w-4")} />
-            {!isSidebarCollapsed && "Cerrar sesión"}
-          </Button>
-
-          {/* Aquí podrías añadir un componente para el perfil del usuario */}
-          {/* <UserProfile /> */}
         </nav>
       </div>
     </aside>
