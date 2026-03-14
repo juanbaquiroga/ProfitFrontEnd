@@ -2,21 +2,9 @@
 
 import { useCartStore } from "@/store/useCartStore";
 import { cn } from "@/lib/utils";
-import {
-    Dialog,
-    DialogContent,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "radix-ui";
-import {
-    ShoppingBag,
-    Banknote,
-    CreditCard,
-    QrCode,
-    CheckCircle2,
-    Delete,
-    X
-} from "lucide-react";
+import { ShoppingBag, Banknote, CreditCard, QrCode, CheckCircle2, Delete, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef, useCallback } from "react";
 import api from "@/lib/axios";

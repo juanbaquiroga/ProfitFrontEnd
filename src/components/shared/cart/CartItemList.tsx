@@ -3,7 +3,6 @@ import { useCartStore } from "@/store/useCartStore";
 import { CartItem } from "./CartItem";
 
 export const CartItemList = () => {
-    // Suscribirse solo a los items del carrito para este componente
     const items = useCartStore((state) => state.items);
 
     if (items.length === 0) {
