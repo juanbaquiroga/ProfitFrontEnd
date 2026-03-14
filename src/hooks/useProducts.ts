@@ -4,9 +4,19 @@ import { Product, ProductoDTO } from '@/types/product.types';
 
 export const useProducts = () => {
   return useQuery<Product[]>({
-    queryKey: ['products'],
+    queryKey: ['products', 'activos'],
     queryFn: async () => {
       const { data } = await api.get('/productos');
+      return data;
+    },
+  });
+};
+
+export const useProductosDeshabilitados = () => {
+  return useQuery<Product[]>({
+    queryKey: ['products', 'deshabilitados'],
+    queryFn: async () => {
+      const { data } = await api.get('/productos/deshabilitados');
       return data;
     },
   });
@@ -43,6 +53,18 @@ export const useEliminarProducto = () => {
   return useMutation({
     mutationFn: async (id: number) => {
       await api.delete(`/productos/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+};
+
+export const useHabilitarProducto = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.patch(`/productos/${id}/habilitar`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
