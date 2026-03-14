@@ -11,10 +11,9 @@ interface CartItemProps {
 }
 
 export const CartItem = memo(({ item }: CartItemProps) => {
-    // Usar selector específico para no suscribirse a todo el estado del carrito
     const updateQuantity = useCartStore((state) => state.updateQuantity);
 
-    const productId = item.product.productoId || item.product.codigo;
+    const productId = item.product.codigo;
 
     return (
         <div className="flex flex-col gap-2">

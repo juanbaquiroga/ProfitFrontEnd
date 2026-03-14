@@ -7,15 +7,11 @@ import { useState } from "react";
 import { CheckoutModal } from "./CheckoutModal";
 
 export const Cart = () => {
-    // Desestructurar todo el objeto del store causa que cualquier cambio
-    // en cualquier parte del store vuelva a renderizar todo el componente.
-    // Usamos selectores individuales para suscribirnos solo a lo necesario.
     const isExpanded = useCartStore((state) => state.isExpanded);
     const toggleCart = useCartStore((state) => state.toggleCart);
     const clearCart = useCartStore((state) => state.clearCart);
     const itemsLength = useCartStore((state) => state.items.length);
 
-    // Calcular valores en los selectores para reaccionar a cambios en sus resultados
     const subtotal = useCartStore((state) => state.getSubtotal());
     const tax = useCartStore((state) => state.getTax());
     const discount = useCartStore((state) => state.getDiscount());
