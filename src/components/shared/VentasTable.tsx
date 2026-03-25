@@ -9,6 +9,7 @@ import {
     type ColumnDef,
 } from "@tanstack/react-table";
 import {
+    Table,
     TableBody,
     TableCell,
     TableHead,
@@ -19,7 +20,7 @@ import { VentaDTO } from "@/types/venta.types";
 import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge"; // ✅ Importamos Badge para la categoría
+import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
@@ -27,48 +28,75 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
+import { Filter, Download, Plus } from "lucide-react";
+import { SearchBar } from "./SearchBar";
+
 interface VentasTableProps {
     data: VentaDTO[];
-    globalFilter: string;
-    setGlobalFilter: (value: string) => void;
+    globalFilter?: string;
+    setGlobalFilter?: (value: string) => void;
     pagination?: boolean;
     pageSize?: number;
+    hideContainerStyles?: boolean;
+    showSearch?: boolean;
 }
 
 export const VentasTable = ({
     data,
-    globalFilter,
-    setGlobalFilter,
+    globalFilter: externalGlobalFilter,
+    setGlobalFilter: externalSetGlobalFilter,
     pagination = false,
-    pageSize = 10
+    pageSize = 10,
+    hideContainerStyles = false,
+    showSearch = false,
 }: VentasTableProps) => {
     const [selectedVenta, setSelectedVenta] = useState<VentaDTO | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    // Allow internal search state if not provided contextually
+    const [internalSearch, setInternalSearch] = useState("");
+    const globalFilter = externalGlobalFilter !== undefined ? externalGlobalFilter : internalSearch;
+    const setGlobalFilter = externalSetGlobalFilter || setInternalSearch;
 
     const handleRowClick = (venta: VentaDTO) => {
         setSelectedVenta(venta);
         setIsDialogOpen(true);
     };
 
+    const mockStatuses = [
+      { label: "Completado", bg: "bg-profit/10", text: "text-profit" }
+    ];
+
     const columns: ColumnDef<VentaDTO>[] = [
         {
             accessorKey: "id",
-            header: "NRO. VENTA",
-            cell: ({ row }) => <span className="text-muted-foreground text-xs uppercase font-mono font-bold">#{row.getValue("id")}</span>
+            header: "ID Pedido",
+            cell: ({ row }) => (
+              <span className="font-bold text-slate-700 text-[14px]">
+                #ORD-{(row.getValue("id") as number).toString().padStart(3, '0')}
+              </span>
+            )
         },
         {
             accessorKey: "fecha",
-            header: "FECHA",
+            header: "Fecha y Hora",
             cell: ({ row }) => {
                 const dateStr = row.getValue("fecha") as string;
-                const date = new Date(dateStr);
+                let dateString = "--/--/----";
+                let timeString = "--:-- --";
+                if(dateStr) {
+                  const date = new Date(dateStr);
+                  dateString = date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+                  timeString = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                }
+
                 return (
                     <div className="flex flex-col">
-                        <span className="font-medium text-foreground">
-                            {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        <span className="font-bold text-slate-800 text-[13px]">
+                            {dateString}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">
-                            {date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                        <span className="text-[13px] text-profit font-medium">
+                            {timeString}
                         </span>
                     </div>
                 );
@@ -76,27 +104,50 @@ export const VentasTable = ({
         },
         {
             id: "items",
-            header: "CANTIDAD DE LÍNEAS",
+            header: "Artículos",
             cell: ({ row }) => {
                 const lineas = row.original.lineas || [];
-                // ✅ Fallback a 0 si la cantidad viene indefinida
-                const numItems = lineas.reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
+                let itemsStr = lineas.map(l => `${l.cantidad}x ${l.productoNombre}`).join(", ");
+                if (itemsStr.length > 40) itemsStr = itemsStr.substring(0, 40) + "...";
+                if (!itemsStr) itemsStr = "Productos no detallados";
+
                 return (
-                    <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{lineas.length} prod. ({numItems} unid.)</span>
-                    </div>
+                    <span className="text-[14px] text-slate-600 font-medium">
+                        {itemsStr}
+                    </span>
                 );
             }
         },
         {
             accessorKey: "total",
-            header: "TOTAL",
+            header: "Total",
             cell: ({ row }) => {
-                // ✅ Fallback a 0 si el total viene indefinido
                 const amount = parseFloat(row.getValue("total")) || 0;
-                return <span className="font-bold text-primary text-lg">${amount.toLocaleString('es-AR')}</span>
+                return <span className="font-extrabold text-slate-900 text-[14.5px]">${amount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
             }
+        },
+        {
+            id: "estado",
+            header: "Estado",
+            cell: () => {
+                const status = mockStatuses[0];
+                return (
+                  <span className={`px-3 py-1 rounded-full text-[12px] font-bold tracking-wide ${status.bg} ${status.text}`}>
+                    {status.label}
+                  </span>
+                )
+            }
+        },
+        {
+            id: "acciones",
+            header: () => <div className="text-right pr-4">Acción</div>,
+            cell: () => (
+              <div className="text-right pr-4">
+                <button className="text-[14px] font-bold text-profit hover:brightness-95 transition-colors shrink-0">
+                  Ver
+                </button>
+              </div>
+            )
         }
     ];
 
@@ -107,168 +158,181 @@ export const VentasTable = ({
             globalFilter,
         },
         initialState: {
-            pagination: {
-                pageSize: pageSize,
-            },
+            pagination: pagination ? { pageSize: pageSize } : undefined,
         },
         onGlobalFilterChange: setGlobalFilter,
+        globalFilterFn: (row, columnId, filterValue) => {
+            if (!filterValue) return true;
+            const search = filterValue.toLowerCase();
+            const v = row.original;
+            
+            // Buscar por ID, Total, o Nombre de Producto en lineas
+            const matchesId = String(v.id).includes(search);
+            const matchesTotal = String(v.total).includes(search);
+            const matchesProducts = v.lineas?.some(linea => 
+                linea.productoNombre?.toLowerCase().includes(search)
+            );
+            
+            return Boolean(matchesId || matchesTotal || matchesProducts);
+        },
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: pagination ? getPaginationRowModel() : undefined,
     });
 
     return (
-        <div className="w-full h-full flex flex-col min-h-0">
-            <div className="rounded-xl border bg-card flex flex-col min-h-0 relative flex-1 shadow-sm">
-
-                <div className="flex-1 overflow-auto">
-                    <table className="w-full caption-bottom text-sm relative border-separate border-spacing-0">
-                        <TableHeader className="sticky top-0 z-20 shadow-sm">
-                            {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id} className="border-none">
-                                    {headerGroup.headers.map((header) => (
-                                        <TableHead
-                                            key={header.id}
-                                            className="text-[10px] font-bold py-4 bg-slate-50 first:rounded-tl-xl last:rounded-tr-xl tracking-wider text-slate-500"
-                                        >
-                                            {flexRender(header.column.columnDef.header, header.getContext())}
-                                        </TableHead>
+        <div className={`w-full h-full flex flex-col min-h-0 ${!hideContainerStyles ? 'rounded-[20px] border border-profit/10 bg-white shadow-sm' : ''}`}>
+            
+            {showSearch && (
+                <div className="px-8 py-5 border-b border-gray-50 flex flex-col sm:flex-row gap-4 items-center justify-between bg-white rounded-t-[20px] shrink-0">
+                    <div className="w-full max-w-md">
+                        <SearchBar value={globalFilter} onChange={setGlobalFilter} />
+                    </div>
+                </div>
+            )}
+            
+            <div className={`flex-1 overflow-auto ${!showSearch ? 'rounded-t-[20px]' : ''}`}>
+                <Table className="w-full min-w-[600px] border-separate border-spacing-0">
+                    <TableHeader className="sticky top-0 z-20 bg-white">
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-gray-50 border-none shadow-sm">
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead
+                                        key={header.id}
+                                        className="text-[13px] font-bold text-[#8C9B9D] h-[52px] border-b border-slate-100 bg-white"
+                                    >
+                                        {flexRender(header.column.columnDef.header, header.getContext())}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+                    <TableBody>
+                        {table.getRowModel().rows.length > 0 ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow
+                                    key={row.id}
+                                    className="border-b border-gray-50/50 hover:bg-profit/5 transition-colors cursor-pointer"
+                                    onClick={() => handleRowClick(row.original)}
+                                >
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id} className="py-[18px]">
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </TableCell>
                                     ))}
                                 </TableRow>
-                            ))}
-                        </TableHeader>
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        className="hover:bg-slate-50 border-b last:border-0 transition-colors cursor-pointer"
-                                        onClick={() => handleRowClick(row.original)}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id} className="py-4">
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                                        No se encontraron ventas.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </table>
-                </div>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="h-32 text-center text-slate-400 font-medium text-sm">
+                                    No se encontraron transacciones para mostrar.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
 
-                {pagination && (
-                    <div className="flex-none flex items-center justify-between px-4 py-3 border-t bg-card rounded-b-xl border-slate-100">
-                        <div className="flex-1 text-[13px] text-muted-foreground font-medium">
-                            Mostrando {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} venta(s).
+            {pagination && (
+                <div className="flex-none flex items-center justify-between px-6 py-4 border-t bg-white rounded-b-xl border-slate-100/50 relative z-10">
+                    <div className="flex-1 text-[13px] text-slate-500 font-medium">
+                        Mostrando {table.getRowModel().rows.length} de {table.getFilteredRowModel().rows.length} venta(s).
+                    </div>
+                    <div className="flex items-center space-x-6 lg:space-x-8">
+                        <div className="flex items-center space-x-2 text-[13px] font-bold text-slate-600">
+                            <p>Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}</p>
                         </div>
-                        <div className="flex items-center space-x-6 lg:space-x-8">
-                            <div className="flex items-center space-x-2 text-[13px] font-medium text-slate-500">
-                                <p>Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0 rounded-full border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50"
-                                    onClick={() => table.previousPage()}
-                                    disabled={!table.getCanPreviousPage()}
-                                >
-                                    <span className="sr-only">Página anterior</span>
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0 rounded-full border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50"
-                                    onClick={() => table.nextPage()}
-                                    disabled={!table.getCanNextPage()}
-                                >
-                                    <span className="sr-only">Página siguiente</span>
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </div>
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-200 text-slate-500 hover:bg-profit/10 hover:text-profit hover:border-profit/30 transition-colors disabled:opacity-50 appearance-none rounded-xl"
+                                onClick={() => table.previousPage()}
+                                disabled={!table.getCanPreviousPage()}
+                            >
+                                <span className="sr-only">Página anterior</span>
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-200 text-slate-500 hover:bg-profit/10 hover:text-profit hover:border-profit/30 transition-colors disabled:opacity-50 appearance-none rounded-xl"
+                                onClick={() => table.nextPage()}
+                                disabled={!table.getCanNextPage()}
+                            >
+                                <span className="sr-only">Página siguiente</span>
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Modal Detalle de Venta */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                {/* ✅ Cambiamos max-w-3xl por max-w-4xl para hacer el popup más grande */}
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle className="text-xl text-slate-800">
-                            Detalle de la Venta <span className="text-primary font-mono uppercase">#{selectedVenta?.id}</span>
+                        <DialogTitle className="text-xl text-slate-800 font-bold">
+                            Detalle de la Venta <span className="text-profit uppercase">#ORD-{selectedVenta?.id?.toString().padStart(3, '0')}</span>
                         </DialogTitle>
                         {selectedVenta?.fecha && (
-                            <div className="text-sm text-muted-foreground mt-1">
+                            <div className="text-[14px] text-slate-500 font-medium mt-1">
                                 {new Date(selectedVenta.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })} a las {new Date(selectedVenta.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                             </div>
                         )}
                     </DialogHeader>
 
                     <div className="mt-4">
-                        <div className="rounded-md border border-slate-200 overflow-hidden">
+                        <div className="rounded-[16px] border border-slate-100 overflow-hidden shadow-sm">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 border-b border-slate-200">
+                                <thead className="bg-[#FAFBFA] border-b border-gray-100">
                                     <tr>
-                                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Producto</th>
-                                        {/* ✅ Nueva columna para la Categoría */}
-                                        <th className="px-4 py-3 text-left font-semibold text-slate-600">Categoría</th>
-                                        <th className="px-4 py-3 text-right font-semibold text-slate-600">Cantidad</th>
-                                        <th className="px-4 py-3 text-right font-semibold text-slate-600">Precio Unitario</th>
-                                        <th className="px-4 py-3 text-right font-semibold text-slate-600">Subtotal</th>
+                                        <th className="px-5 py-4 text-left font-bold text-[#8C9B9D] text-[13px]">Producto</th>
+                                        <th className="px-5 py-4 text-left font-bold text-[#8C9B9D] text-[13px]">Categoría</th>
+                                        <th className="px-5 py-4 text-right font-bold text-[#8C9B9D] text-[13px]">Cantidad</th>
+                                        <th className="px-5 py-4 text-right font-bold text-[#8C9B9D] text-[13px]">Precio Unitario</th>
+                                        <th className="px-5 py-4 text-right font-bold text-[#8C9B9D] text-[13px]">Subtotal</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-200">
+                                <tbody className="divide-y divide-gray-50 bg-white">
                                     {selectedVenta?.lineas?.map((linea, index) => (
-                                        <tr key={index} className="hover:bg-slate-50/50">
-                                            <td className="px-4 py-3 text-slate-700 font-medium">
+                                        <tr key={index} className="hover:bg-profit/5 transition-colors">
+                                            <td className="px-5 py-4 text-slate-800 font-bold text-[14px]">
                                                 {linea.productoNombre || 'Producto Desconocido'}
                                             </td>
-                                            {/* ✅ Nueva celda mostrando la categoría */}
-                                            <td className="px-4 py-3">
+                                            <td className="px-5 py-4">
                                                 {linea.categoriaNombre ? (
-                                                    <Badge variant="secondary" className="font-normal text-[11px] bg-slate-100 text-slate-600">
+                                                    <Badge variant="secondary" className="font-bold text-[11px] bg-slate-100 text-slate-600 rounded-md">
                                                         {linea.categoriaNombre}
                                                     </Badge>
                                                 ) : (
-                                                    <span className="text-slate-400 italic text-xs">Sin categoría</span>
+                                                    <span className="text-slate-400 italic text-[12px]">Sin categoría</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-right text-slate-600">
+                                            <td className="px-5 py-4 text-right font-bold text-slate-600 text-[14px]">
                                                 {linea.cantidad || 0}
                                             </td>
-                                            <td className="px-4 py-3 text-right text-slate-600">
-                                                ${(linea.precioUnitario || 0).toLocaleString('es-AR')}
+                                            <td className="px-5 py-4 text-right text-profit font-medium text-[14px]">
+                                                ${(linea.precioUnitario || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="px-4 py-3 text-right text-slate-800 font-medium">
-                                                ${(linea.subtotal || 0).toLocaleString('es-AR')}
+                                            <td className="px-5 py-4 text-right text-slate-800 font-bold text-[14px]">
+                                                ${(linea.subtotal || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </td>
                                         </tr>
                                     ))}
                                     {(!selectedVenta?.lineas || selectedVenta.lineas.length === 0) && (
                                         <tr>
-                                            {/* ✅ Actualizado colSpan a 5 */}
-                                            <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                                            <td colSpan={5} className="px-5 py-8 text-center text-slate-400 font-medium text-sm">
                                                 No hay productos en esta venta.
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
-                                <tfoot className="bg-slate-50 border-t border-slate-200">
+                                <tfoot className="bg-[#FAFBFA] border-t border-gray-100">
                                     <tr>
-                                        {/* ✅ Actualizado colSpan a 4 */}
-                                        <td colSpan={4} className="px-4 py-3 text-right font-bold text-slate-700">
+                                        <td colSpan={4} className="px-5 py-5 text-right font-bold text-slate-600 text-[13px] uppercase tracking-wider">
                                             TOTAL
                                         </td>
-                                        <td className="px-4 py-3 text-right font-bold text-primary text-lg">
-                                            ${(selectedVenta?.total || 0).toLocaleString('es-AR')}
+                                        <td className="px-5 py-5 text-right font-black text-slate-900 text-[16px]">
+                                            ${(selectedVenta?.total || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                         </td>
                                     </tr>
                                 </tfoot>

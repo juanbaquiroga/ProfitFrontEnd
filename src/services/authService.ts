@@ -3,7 +3,6 @@ import { LoginRequest, SignupRequest, UserResponse } from '@/types/user.types';
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<UserResponse> => {
-    console.log("credentials ", credentials);
     const { data } = await api.post('/auth/login', credentials, {
       headers: {
         'Content-Type': 'application/json',

@@ -104,13 +104,20 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     });
 
     useHotkey('Escape', () => {
-        if (isOpen) onClose();
+        if (isOpen) handleModalClose();
     });
 
     const handleQuickAmount = (amount: number) => {
         if (paymentStatus === "processing" || paymentStatus === "success") return;
         setAmountReceivedStr(amount.toString());
     };
+
+    const handleModalClose = useCallback(() => {
+        if (paymentStatus === "success") {
+            clearCart();
+        }
+        onClose();
+    }, [paymentStatus, clearCart, onClose]);
 
     const handleConfirm = async () => {
         if (!isSufficientAmount && paymentMethod === "cash") return;
@@ -143,6 +150,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
 
             // Wait to show animation and then close
             setTimeout(() => {
+                // If the user hasn't closed it manually yet
                 clearCart();
                 onClose();
             }, 2000);
@@ -155,7 +163,7 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={(open) => { if(!open) handleModalClose() }}>
             <DialogContent
                 showCloseButton={false}
                 className="sm:max-w-none max-w-none w-[90vw] max-h-[90vh] p-0 overflow-hidden bg-slate-50 border-none rounded-3xl gap-0 flex flex-col md:flex-row shadow-2xl"
@@ -213,8 +221,8 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
                         variant="ghost"
                         size="icon"
                         className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full z-10"
-                        onClick={onClose}
-                        disabled={paymentStatus === "processing" || paymentStatus === "success"}
+                        onClick={handleModalClose}
+                        disabled={paymentStatus === "processing"}
                     >
                         <X className="w-5 h-5" />
                     </Button>
@@ -363,10 +371,10 @@ export const CheckoutModal = ({ isOpen, onClose }: CheckoutModalProps) => {
                             <Button
                                 variant="outline"
                                 className="flex-1 h-14 rounded-xl border-slate-200 text-muted-foreground font-bold text-sm bg-white hover:bg-slate-50"
-                                onClick={onClose}
-                                disabled={paymentStatus === "processing" || paymentStatus === "success"}
+                                onClick={handleModalClose}
+                                disabled={paymentStatus === "processing"}
                             >
-                                Cancelar
+                                {paymentStatus === "success" ? "Cerrar" : "Cancelar"}
                             </Button>
                             <Button
                                 className="flex-2 h-14 rounded-xl bg-profit hover:bg-contrast text-primary font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
