@@ -39,6 +39,11 @@ export const SearchBar = ({
                 return;
             }
 
+            // Ignorar si hay un Dialog/Modal abierto (por ejemplo, el modal de Checkout)
+            if (document.querySelector('[role="dialog"]')) {
+                return;
+            }
+
             if (e.ctrlKey || e.altKey || e.metaKey) return;
 
             // Si el evento NO fue dirigido nativamente a la barra de búsqueda, lo interceptamos

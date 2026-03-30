@@ -6,6 +6,7 @@ export interface Categoria {
 }
 
 export interface Product {
+  habilitado: boolean;
   productoId: number;
   codigo: string;
   nombre: string;
